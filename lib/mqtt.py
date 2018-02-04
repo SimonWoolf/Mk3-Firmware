@@ -1,6 +1,7 @@
 import usocket as socket
 import ustruct as struct
 from ubinascii import hexlify
+import sys
 
 class MQTTException(Exception):
     pass
@@ -151,8 +152,11 @@ class MQTTClient:
     # set by .set_callback() method. Other (internal) MQTT
     # messages processed internally.
     def wait_msg(self):
-        res = self.sock.recv(1)
-        self.sock.setblocking(True)
+        try:
+            res = self.sock.recv(1)
+            self.sock.setblocking(True)
+        except OSError:
+            return None
         if res is None:
             return None
         if res == b"":
@@ -186,5 +190,8 @@ class MQTTClient:
     # If not, returns immediately with None. Otherwise, does
     # the same processing as wait_msg.
     def check_msg(self):
-        self.sock.setblocking(False)
+        try:
+            self.sock.setblocking(False)
+        except OSError:
+            return None
         return self.wait_msg()
