@@ -1,0 +1,1 @@
+Turn on device, mount filesystem, connect to repl with `screen /dev/ttyACM1` (or possibly 0). send an EOF to soft reboot.

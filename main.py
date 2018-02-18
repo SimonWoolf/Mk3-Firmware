@@ -1,4 +1,4 @@
-import ugfx, pyb, buttons, dialogs, wifi
+import ugfx, pyb, buttons, dialogs, wifi, time
 from mqtt import MQTTClient
 
 TICK_EVERY_MS = 100
@@ -38,12 +38,20 @@ wifi.connect(
 def sub_cb(topic, msg):
     write_line(topic + " - " + msg)
 
-channel = b"channel"
+def connect(mqtt):
+    try:
+        mqtt.set_callback(sub_cb)
+        write_line("connecting to server...")
+        return mqtt.connect()
+    except Exception:
+        time.sleep(1)
+        connect(mqtt)
+
 session_id = "emfbadge_" + str(pyb.rng())
-mqtt = MQTTClient(session_id, "sandbox-mqtt.ably.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60)
-mqtt.set_callback(sub_cb)
-write_line("connecting to server...")
-res = mqtt.connect()
+channel = b"channel"
+# mqtt = MQTTClient(session_id, "sandbox-mqtt.ably.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60)
+mqtt = MQTTClient(session_id, "0.tcp.ngrok.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60, port=14608)
+res = connect(mqtt)
 write_line("connect result: " + str(res))
 
 def on_tick(now):
@@ -51,17 +59,19 @@ def on_tick(now):
     # Non-blocking wait for message
     mqtt.check_msg()
     if now - last_ping >= 5*1000: ## TODO change back to 60
-        # mqtt.ping()
-        print(".")
-        mqtt.publish(channel, b"hello world")
+        print("pinging")
         last_ping = now
+        try:
+            mqtt.ping()
+        except OSError:
+            print("got an oserror, connecting again")
+            connect(mqtt)
+        # mqtt.publish(channel, b"hello world")
 
 next_tick = 0
 if res == 0:
     last_ping = pyb.millis()
     mqtt.subscribe(channel)
-    mqtt.publish(channel, b"hello world")
-    mqtt.publish(channel, b"hello world")
     mqtt.publish(channel, b"hello world")
     while True:
         pyb.wfi() # Wait For Input -- only waits 1ms
