@@ -43,14 +43,15 @@ def connect(mqtt):
         mqtt.set_callback(sub_cb)
         write_line("connecting to server...")
         return mqtt.connect()
-    except Exception:
+    except Exception as err:
+        write_line("Error connecting: " + str(err))
         time.sleep(1)
         connect(mqtt)
 
 session_id = "emfbadge_" + str(pyb.rng())
 channel = b"channel"
-# mqtt = MQTTClient(session_id, "sandbox-mqtt.ably.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60)
-mqtt = MQTTClient(session_id, "0.tcp.ngrok.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60, port=14608)
+mqtt = MQTTClient(session_id, "sandbox-mqtt.ably.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60, ssl=True)
+# mqtt = MQTTClient(session_id, "0.tcp.ngrok.io", user="mz3G9w.G3yQww", password="Rjo9T6rLAKaK64wu", keepalive=60, port=14608)
 res = connect(mqtt)
 write_line("connect result: " + str(res))
 
@@ -58,7 +59,7 @@ def on_tick(now):
     global last_ping
     # Non-blocking wait for message
     mqtt.check_msg()
-    if now - last_ping >= 5*1000: ## TODO change back to 60
+    if now - last_ping >= 60*1000: ## TODO change back to 60
         print("pinging")
         last_ping = now
         try:
